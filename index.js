@@ -53,9 +53,7 @@ const client = redis.createClient({
 
 client.connect()
 
-
 // Morgan - Multer - Cloudinary
-
 const cloudinary = require("./cloudinary");
 const multer = require("multer");
 
@@ -112,7 +110,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/", async function (req, res) {
   let kp = await client.get("admin")
   await client.del("admin");
-  res.send("AYS : This is Siddu,Backend deployed Successfully");
+  res.send("AYS : Hi this is Siddu,Backend deployed Successfully");
 });
 
 
