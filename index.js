@@ -17,18 +17,18 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const redis = require("redis");
 
-require("dotenv").config();
 
+require("dotenv").config();
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
 var razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: "rzp_test_5CdUHW8gMUz0Gf",
+  key_secret: "SyujWPOCUf6hKxSOtv8V27iU",
 });
 
 
 const client =redis.createClient({
-    password: process.env.REDIS_PASSWORD,
+    password: "te2T4l9iVgYAEdiulyROUlBVM3XMBUP0",
     socket: {
         host: 'redis-19386.c8.us-east-1-2.ec2.cloud.redislabs.com',
         port: 19386
