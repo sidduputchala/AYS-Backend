@@ -5,6 +5,9 @@ const bodyparser = require("body-parser");
 app.use(bodyparser.json());
 app.use(express.json());
 
+var cors = require("cors");
+app.use(cors());
+
 require("dotenv").config();
 
 var mongoose = require("mongoose");
@@ -13,8 +16,6 @@ var Employees = require("./models/Employee");
 var Messages = require("./models/Message");
 var Orders = require("./models/Order");
 
-var cors = require("cors");
-app.use(cors());
 
 mongoose.connect( process.env.MONGO_URI,
   { useNewUrlParser: true, useUnifiedTopology: true }
@@ -1056,8 +1057,9 @@ app.get("/getusersforadmin", verifyJWT, async (req, res) => {
           await client.set("admin", JSON.stringify(results));
           res.json({ auth: true, users:users, fromCache: isCached });
         }
-      });      
+      })   
      }
+     
   } catch (error) {
     res.json({ auth: false, users: null ,fromCache: isCached});
   }
@@ -1709,7 +1711,7 @@ app.get('/getuserbyid/:id',verifyJWT, (req, res) => {
 const port = process.env.PORT || 3001;
 
 const server = app.listen(port, () => {
-      console.log("App listening " + port);
+      console.log("App listening on 3001 ");
 });
 
 module.exports = server;  
