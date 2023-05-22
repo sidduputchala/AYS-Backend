@@ -21,13 +21,13 @@ const redis = require("redis");
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
 var razorpay = new Razorpay({
-  key_id: "rzp_test_5CdUHW8gMUz0Gf",
-  key_secret: "SyujWPOCUf6hKxSOtv8V27iU",
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 
 const client =redis.createClient({
-    password: "te2T4l9iVgYAEdiulyROUlBVM3XMBUP0",
+    password: process.env.REDIS_PASSWORD,
     socket: {
         host: 'redis-19386.c8.us-east-1-2.ec2.cloud.redislabs.com',
         port: 19386
