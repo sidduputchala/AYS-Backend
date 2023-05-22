@@ -297,7 +297,6 @@ app.get("/login", async (req, res) => {
   let password = req.query.password;
 
   await client.del(email);
-
   Users.find({ email: email }, (err, users) => {
     if (users.length > 0) {
       // compare password
@@ -307,13 +306,15 @@ app.get("/login", async (req, res) => {
           let token = jwt.sign({ email: users[0].email }, process.env.JWT_KEY, {
             expiresIn: "1h",
           });
-
           res.json({ auth: true, token: token, users: users });
-        } else {
+        } 
+        else {
           res.json({ auth: false, token: null, users: null });
         }
       });
-    } else {
+    } 
+    else
+     {
       res.json({ auth: false, token: null, users: null });
     }
   });
@@ -941,7 +942,7 @@ app.get("/adminlogin",async (req, res) => {
   let email = req.query.adminemail;
   let password = req.query.adminpassword;
   await client.del("admin");
-  if (email == "varma@gmail.com" && password == "varma") {
+  if (email == "sidduputchala@gmail.com" && password == "Siddu@3645") {
 
     // create a token
     let token = jwt.sign({ email: email }, "jwtSecret", { expiresIn: "1h" });
