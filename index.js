@@ -1,33 +1,49 @@
 var express = require("express");
 var app = express();
+
+const bodyparser = require("body-parser");
+app.use(bodyparser.json());
+app.use(express.json());
+
+require("dotenv").config();
+
 var mongoose = require("mongoose");
-var cors = require("cors");
 var Users = require("./models/User");
 var Employees = require("./models/Employee");
 var Messages = require("./models/Message");
 var Orders = require("./models/Order");
-app.use(express.json());
+
 var cors = require("cors");
 app.use(cors());
+
+mongoose.connect( process.env.MONGO_URI,
+  { useNewUrlParser: true, useUnifiedTopology: true }
+)
+  .then(() => {
+    
+  })
+  .catch((err) => {
+    console.log(err);
+  })
+
+
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const bodyparser = require("body-parser");
-app.use(bodyparser.json());
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const redis = require("redis");
 
+const redis = require("redis");
 
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
 var razorpay = new Razorpay({
-  key_id: "rzp_test_5CdUHW8gMUz0Gf",
-  key_secret: "SyujWPOCUf6hKxSOtv8V27iU",
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-
-const client =redis.createClient({
-    password: "te2T4l9iVgYAEdiulyROUlBVM3XMBUP0",
+const client = redis.createClient({
+    password: process.env.REDIS_PASSWORD,
     socket: {
         host: 'redis-19386.c8.us-east-1-2.ec2.cloud.redislabs.com',
         port: 19386
@@ -38,14 +54,8 @@ client.connect()
 
 
 // Morgan - Multer - Cloudinary
-// const morgan = require("morgan");
-// const { logs } = require("./morgan/morgan.js");
-// app.use(morgan("combined", { stream: logs }));
-
-require("dotenv").config();
 
 const cloudinary = require("./cloudinary");
-
 const multer = require("multer");
 
 const storage = multer.diskStorage({
@@ -57,7 +67,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
-
 
 
 // import compare
@@ -91,38 +100,19 @@ const options = {
       },
     ],
   },
-  apis: ["./app.js"],
+  apis: ["./index.js"],
 };
+
 const swaggerSpec = swaggerJsDoc(options);
 
 // swagger docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
-mongoose.connect(
-  process.env.MONGO_URI,
-  { useNewUrlParser: true, useUnifiedTopology: true }
-)
-  .then(() => {
-    
-  })
-  .catch((err) => {
-    console.log(err);
-  })
-
-
-
-
-
-
 app.get("/", async function (req, res) {
   let kp = await client.get("admin")
-  console.log(kp);
   await client.del("admin");
-  res.send("hello world");
+  res.send("AYS : This is Siddu,Backend deployed Successfully");
 });
-
-
 
 
 app.post("/razorpay",(req,res)=>{
@@ -138,24 +128,13 @@ app.post("/razorpay",(req,res)=>{
   });
 })
 
-
 // Middleware
 const verifyJWT = (req, res, next) => {
   let token = req.headers["authorization"].split(" ")[1];
-  // const token = req.headers["x-access-token"];
-  //let token = req.headers["authorization"];
-  // if(token!=null || token!=undefined){
-  //   if(token.includes("Bearer") || token.includes("bearer")){
-  //  token = req.headers["authorization"].split(" ")[1];
-  //   }
-  // }
-  console.log("verifyJWT_FRontend:", token);
-
   if (!token) {
     res.json({ auth: false, message: "You failed to authenticate" });
   } else {
     jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-      console.log(decoded);
       if (err) {
         res.json({ auth: false, message: "You failed to authenticate1" });
       } else {
@@ -167,8 +146,6 @@ const verifyJWT = (req, res, next) => {
 };
 
 // Defining swagger schemas
-
-
 /**
  * @swagger
  *  components:
@@ -320,7 +297,7 @@ app.get("/login", async (req, res) => {
   let email = req.query.email;
   let password = req.query.password;
 
- await client.del(email);
+  await client.del(email);
 
   Users.find({ email: email }, (err, users) => {
     if (users.length > 0) {
@@ -332,19 +309,11 @@ app.get("/login", async (req, res) => {
             expiresIn: "1h",
           });
 
-          console.log("User token:", token);
           res.json({ auth: true, token: token, users: users });
         } else {
           res.json({ auth: false, token: null, users: null });
         }
       });
-
-      // if(err){
-      //     res.json(null);
-      // }else{
-      //     console.log(users);
-      //     res.json(users);
-      // }
     } else {
       res.json({ auth: false, token: null, users: null });
     }
@@ -381,12 +350,10 @@ app.get("/login", async (req, res) => {
 
 app.get("/checkemail", (req, res) => {
   let email = req.query.email;
-  console.log(email);
   Users.find({ email: email }, (err, users) => {
     if (err) {
       res.json(null);
     } else {
-      console.log(users);
       res.json(users);
     }
   });
@@ -420,7 +387,6 @@ app.get("/checkemail", (req, res) => {
 
 app.post("/signup", (req, res) => {
   var user = new Users(req.body);
-
   user.save((err, user) => {
     if (err) {
       res.json(null);
@@ -507,10 +473,6 @@ app.post("/messages", verifyJWT, (req, res) => {
 app.get("/emplogin", (req, res) => {
   let email = req.query.email;
   let password = req.query.password;
-
-
-
-
   Employees.find({ email: email }, (err, employees) => {
     if (err) {
       res.json({ auth: false, token: null, employees: null });
@@ -527,22 +489,16 @@ app.get("/emplogin", (req, res) => {
           let token = jwt.sign({ email: employees[0].email }, "jwtSecret", {
             expiresIn: "1h",
           });
-
-          console.log("Token employee: ", token);
           res.json({ auth: true, token: token, employees: employees });
         } else {
           res.json({ auth: false, token: null, employees: null });
         }
       });
-
-      // console.log(employees);
-      // res.json(employees);
     }
   });
 });
 
 // Employee Signup
-
 /**
  * @swagger
  * /empsignup:
@@ -568,7 +524,6 @@ app.get("/emplogin", (req, res) => {
  */
 app.post("/empsignup", (req, res) => {
   let employee1 = new Employees(req.body);
-  console.log(employee1);
 
   // check email exists or not
   Employees.find({ email: employee1.email }, (err, employees) => {
@@ -589,38 +544,6 @@ app.post("/empsignup", (req, res) => {
       }
     }
   });
-});
-
-// get order details in employee (employeeee.js file)
-// app.get("/ordersbyemp",verifyJWT,(req,res)=>{
-//     let eemail = req.query.eemail;
-//     Orders.find
-//     ({email:eemail},(err,orders)=>{
-//         if(err){
-//             res.json({auth:false,orders:null});
-//         }else{
-//             console.log(orders);
-//             res.json({auth:true,orders:orders});
-//         }
-//     }
-//     )
-// })
-
-// Update order details and status (****Not Used****)
-app.put("/updateorder/:id", verifyJWT, (req, res) => {
-  var orderid = req.params.id;
-  Orders.update(
-    { _id: orderid },
-    { $set: { status: order.status } },
-    (err, orders) => {
-      if (err) {
-        res.json({ auth: false, orders: null });
-      } else {
-        console.log(orders);
-        res.json({ auth: true, orders: orders });
-      }
-    }
-  );
 });
 
 //get Orders by user
@@ -654,60 +577,30 @@ app.put("/updateorder/:id", verifyJWT, (req, res) => {
  */
 
 app.get("/ordersbyuser", verifyJWT, async (req, res) => {
-
   let uemail = req.query.uemail;
-
   let isCached = false;
   let results;
-
   try {
     let cacheResults = await client.get(uemail);
     if (cacheResults) {
       isCached = true;
       results = JSON.parse(cacheResults);
-      console.log("from cache");
       res.json({ auth: true, orders: results, fromCache: isCached });
     } else {
       Orders.find({ uemail: uemail },async (err, orders) => {
         if (err) {
-          console.log("Error in fetching orders");
           res.json({ auth: false, orders: null,fromCache: isCached });
         } else {
           results = orders;
           await client.set(uemail, JSON.stringify(results));
           res.json({ auth: true, orders: orders, fromCache: isCached });
         }
-
       });
-
-        console.log("from db");
-      
      }
-
-    
   } catch (error) {
-
-    console.log("Big error",error);
     res.json({ auth: false, orders: null ,fromCache: isCached});
-   
   }
-  
-
-
-  // Orders.find({ uemail: uemail }, (err, orders) => {
-  //   if (err) {
-  //     res.json({ auth: false, orders: null });
-  //   } else {
-  //     console.log(orders);
-  //     res.json({ auth: true, orders: orders });
-  //   }
-  // });
- 
-  
 });
-
-
-
 
 // Update user detailss
 
@@ -745,10 +638,8 @@ app.post("/updateuser",verifyJWT, async (req, res) => {
     { upsert: true },
     function (err, doc) {
       if (err) {
-        console.log("Error in updating user details");
         res.json({ auth: false, doc: null });
       } else {
-        console.log("User details updated successfully");
         res.json({ auth: true, doc: doc });
       }
     }
@@ -809,7 +700,6 @@ app.get("/findemployee", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     }
@@ -845,20 +735,16 @@ app.get("/findemployee", verifyJWT, (req, res) => {
  */
 
 app.post("/updateemployee", verifyJWT, async (req, res) => {
-  console.log("Update employee", req.body);
-
+ 
   let query = { email: req.body.email };
-
   Employees.findOneAndUpdate(
     query,
     req.body,
     { upsert: false },
     function (err, doc) {
       if (err) {
-        console.log("Error in updating employee details");
         res.json({ auth: false, doc: null });
       } else {
-        console.log("Employee details updated successfully");
         res.json({ auth: true, doc: doc });
       }
     }
@@ -902,10 +788,8 @@ app.post("/updateemployeebyemail", verifyJWT, async (req, res) => {
     { upsert: false },
     function (err, doc) {
       if (err) {
-        console.log("Error in updating employee details");
         res.json({ auth: false, doc: null });
       } else {
-        console.log("Employee details updated successfully");
         res.json({ auth: true, doc: doc });
       }
     }
@@ -941,10 +825,8 @@ app.post("/updateemployeebyemail", verifyJWT, async (req, res) => {
  */
 
 app.post("/orders", verifyJWT, async (req, res) => {
-
   
    await client.del(req.body.uemail);
-
 
   var order = new Orders(req.body);
   order.save((err, order) => {
@@ -992,19 +874,10 @@ app.get("/getorders", verifyJWT, (req, res) => {
     if (err) {
       res.json({ auth: false, orders: null });
     } else {
-      console.log(orders);
       res.json({ auth: true, orders: orders });
     }
   });
 });
-
-
-
-
-
-
-
-
 
 // update orders
 
@@ -1042,18 +915,14 @@ app.post("/updateorder", verifyJWT, async (req, res) => {
   let query = { _id: orderid };
   let status = req.body.status;
 
-  console.log("Update order", req.body);
-
   Orders.findOneAndUpdate(
     query,
     { status: status },
     { upsert: false },
     function (err, doc) {
       if (err) {
-        console.log("Error in updating order details");
         res.json({ auth: false, doc: null });
       } else {
-        console.log("Order details updated successfully");
         res.json({ auth: true, doc: doc });
       }
     }
@@ -1073,15 +942,10 @@ app.get("/adminlogin",async (req, res) => {
   let email = req.query.adminemail;
   let password = req.query.adminpassword;
   await client.del("admin");
-  console.log(req.body);
-
   if (email == "varma@gmail.com" && password == "varma") {
-    console.log("Admin logged in");
 
     // create a token
     let token = jwt.sign({ email: email }, "jwtSecret", { expiresIn: "1h" });
-
-    console.log("Admin token:", token);
     res.json({ auth: true, token: token });
   } else {
     res.json({ auth: false, token: null });
@@ -1110,20 +974,16 @@ app.get("/adminlogin",async (req, res) => {
  */
 
 app.get("/getordersforadmin", verifyJWT,async (req, res) => {
-
-
   Orders.find({}, (err, orders) => {
     if (err) {
       res.json({ auth: false, orders: null });
     } else {
-      console.log(orders);
       res.json({ auth: true, orders: orders });
     }
   });
 });
 
 // get all employees
-
 /**
  * @swagger
  * /getemployeesforadmin:
@@ -1149,7 +1009,6 @@ app.get("/getemployeesforadmin", verifyJWT, (req, res) => {
     if (err) {
       res.json({ auth: false, employees: null });
     } else {
-      console.log(employees);
       res.json({ auth: true, employees: employees });
     }
   });
@@ -1186,43 +1045,22 @@ app.get("/getusersforadmin", verifyJWT, async (req, res) => {
     if (cacheResults) {
       isCached = true;
       results = JSON.parse(cacheResults);
-      console.log("from cache");
       res.json({ auth: true,  users: results, fromCache: isCached });
     } else {
 
       Users.find({},async (err, users) => {
         if (err) {
-          console.log("Error in fetching orders");
           res.json({ auth: false, users: null,fromCache: isCached });
         } else {
           results = users;
           await client.set("admin", JSON.stringify(results));
           res.json({ auth: true, users:users, fromCache: isCached });
         }
-      });
-
-        console.log("from db");
-      
+      });      
      }
-    
   } catch (error) {
-
-    console.log("Big error",error);
     res.json({ auth: false, users: null ,fromCache: isCached});
-   
   }
-
- 
-
-
-  // Users.find({}, (err, users) => {
-  //   if (err) {
-  //     res.json({ auth: false, users: null });
-  //   } else {
-  //     console.log(users);
-  //     res.json({ auth: true, users: users });
-  //   }
-  // });
 });
 
 // get messages for admin
@@ -1252,7 +1090,6 @@ app.get("/getmessagesforadmin",verifyJWT, (req, res) => {
     if (err) {
       res.json({ auth: false, messages: null });
     } else {
-      console.log(messages);
       res.json({ auth: true, messages: messages });
     }
   });
@@ -1298,16 +1135,11 @@ app.get("/getmessagesforadmin",verifyJWT, (req, res) => {
 app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
   let filter = req.query.filter;
   let search = req.query.search;
-
-  console.log("Filter", filter);
-  console.log("Search", search);
-
   if (search == "") {
     Users.find({}, (err, users) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1316,7 +1148,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1325,7 +1156,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1334,7 +1164,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1343,7 +1172,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1352,7 +1180,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1361,7 +1188,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1370,7 +1196,6 @@ app.get("/filtercustomersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, users: null });
       } else {
-        console.log(users);
         res.json({ auth: true, users: users });
       }
     });
@@ -1418,15 +1243,11 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
   let filter = req.query.filter;
   let search = req.query.search;
 
-  console.log("Filter", filter);
-  console.log("Search", search);
-
   if (search == "") {
     Employees.find({}, (err, employees) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1435,7 +1256,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1444,7 +1264,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1453,7 +1272,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1462,7 +1280,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1471,7 +1288,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1480,7 +1296,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1489,7 +1304,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1498,7 +1312,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1507,7 +1320,6 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, employees: null });
       } else {
-        console.log(employees);
         res.json({ auth: true, employees: employees });
       }
     });
@@ -1553,16 +1365,11 @@ app.get("/filteremployeesforadmin", verifyJWT, (req, res) => {
 app.get("/filterordersforadmin", verifyJWT, (req, res) => {
   let filter = req.query.filter;
   let search = req.query.search;
-
-  console.log("Filter", filter);
-  console.log("Search", search);
-
   if (search == "") {
     Orders.find({}, (err, orders) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1571,7 +1378,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1580,7 +1386,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1589,7 +1394,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1598,7 +1402,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1607,7 +1410,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1616,7 +1418,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1625,7 +1426,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1634,7 +1434,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1643,7 +1442,6 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, orders: null });
       } else {
-        console.log(orders);
         res.json({ auth: true, orders: orders });
       }
     });
@@ -1690,16 +1488,11 @@ app.get("/filterordersforadmin", verifyJWT, (req, res) => {
 app.get("/filtermessagesforadmin", verifyJWT, (req, res) => {
   let filter = req.query.filter;
   let search = req.query.search;
-
-  console.log("Filter", filter);
-  console.log("Search", search);
-
   if (search == "") {
     Messages.find({}, (err, messages) => {
       if (err) {
         res.json({ auth: false, messages: null });
       } else {
-        console.log(messages);
         res.json({ auth: true, messages: messages });
       }
     });
@@ -1708,7 +1501,6 @@ app.get("/filtermessagesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, messages: null });
       } else {
-        console.log(messages);
         res.json({ auth: true, messages: messages });
       }
     });
@@ -1717,7 +1509,6 @@ app.get("/filtermessagesforadmin", verifyJWT, (req, res) => {
       if (err) {
         res.json({ auth: false, messages: null });
       } else {
-        console.log(messages);
         res.json({ auth: true, messages: messages });
       }
     });
@@ -1755,12 +1546,10 @@ app.get("/filtermessagesforadmin", verifyJWT, (req, res) => {
 
 app.delete("/deleteuser/:id", verifyJWT, (req, res) => {
   let id = req.params.id;
-  console.log("id", id);
   Users.findByIdAndDelete(id, (err, user) => {
     if (err) {
       res.json({ auth: false, user: null });
     } else {
-      console.log("user", user);
       res.json({ auth: true, user: user });
     }
   });
@@ -1797,12 +1586,10 @@ app.delete("/deleteuser/:id", verifyJWT, (req, res) => {
 
 app.delete("/deleteemployee/:id", verifyJWT, (req, res) => {
   let id = req.params.id;
-  console.log("id", id);
   Employees.findByIdAndDelete(id, (err, employee) => {
     if (err) {
       res.json({ auth: false, employee: null });
     } else {
-      console.log("employee", employee);
       res.json({ auth: true, employee: employee });
     }
   });
@@ -1839,12 +1626,10 @@ app.delete("/deleteemployee/:id", verifyJWT, (req, res) => {
 
 app.delete("/deleteorder/:id", verifyJWT, (req, res) => {
   let id = req.params.id;
-  console.log("id", id);
   Orders.findByIdAndDelete(id, (err, order) => {
     if (err) {
       res.json({ auth: false, order: null });
     } else {
-      console.log("order", order);
       res.json({ auth: true, order: order });
     }
   });
@@ -1880,65 +1665,38 @@ app.delete("/deleteorder/:id", verifyJWT, (req, res) => {
  */
 app.delete("/deletemessage/:id", verifyJWT, (req, res) => {
   let id = req.params.id;
-  console.log("id", id);
   Messages.findByIdAndDelete(id, (err, message) => {
     if (err) {
       res.json({ auth: false, message: null });
     } else {
-      console.log("message", message);
       res.json({ auth: true, message: message });
     }
   });
 });
 
-
-
 app.get('/getcountforadmin', async (req, res) => {
   // count no of salon orders and other type of orders
   let q = req.query.type;
   let count;
-
   count = await Orders.countDocuments({ itype: q });
-
   res.json({ count: count });
 
 })
 
-
-
 app.post("/uploadimg", upload.single("file") ,verifyJWT, async (req, res) => {
-  console.log("Upload image", req.body);
-  console.log("Upload file", req.file);
   let url;
-
-
   cloudinary.uploader.upload(req.file.path, { public_id: req.file.filename }).then((data) => {
-    console.log(data);
     url = data.secure_url;
-    console.log("URL", data.secure_url);
-
   }).catch((err) => {
-    console.log(err);
   }).then((respone) => {
     res.json({ auth: true, secure_url: url });
   });
-
-
-  // Generate 
-  // let url = cloudinary.url(req.file.filename, {
-  //   width: 100,
-  //   height: 150,
-  //   Crop: 'fill'
-  // });
-
-
 });
 
 
 
 app.get('/getuserbyid/:id',verifyJWT, (req, res) => {
   let id = req.params.id;
-  console.log("id", id);
   Users.findById(id, (err, user) => {
     if (err) {
       res.json({ auth: false, user: null });
@@ -1948,11 +1706,10 @@ app.get('/getuserbyid/:id',verifyJWT, (req, res) => {
   });
 });
 
-
-
 const port = process.env.PORT || 3001;
+
 const server = app.listen(port, () => {
-      console.log("App listening on port 3001");
+      console.log("App listening " + port);
 });
 
-module.exports = server;
+module.exports = server;  
