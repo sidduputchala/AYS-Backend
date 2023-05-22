@@ -11,6 +11,13 @@
             "src":"/(.*)",
             "dest":"/"
         }
+    ],
+    
+    "rewrites": [
+        {
+          "source": "/api-docs",
+          "destination": "/api/api-docs.js"
+        }
     ]
 
 }
