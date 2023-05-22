@@ -28,8 +28,8 @@ mongoose.connect( process.env.MONGO_URI,
   })
 
 
-// const swaggerJsDoc = require("swagger-jsdoc");
-// const swaggerUi = require("swagger-ui-express");
+const swaggerJsDoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -72,40 +72,40 @@ const upload = multer({ storage: storage });
 const compare = require("bcryptjs").compare;
 
 // swagger configuration
-// const options = {
-//   definition: {
-//     openapi: "3.0.0",
-//     info: {
-//       title: "AT YOUR SERVICE (AYS)",
-//       version: "1.0.0",
-//     },
-//     components: {
-//       securitySchemes: {
-//         bearerAuth: {
-//           type: "http",
-//           scheme: "bearer",
-//           bearerFormat: "JWT",
-//         },
-//       },
-//     },
-//     security: [
-//       {
-//         bearerAuth: [],
-//       },
-//     ],
-//     servers: [
-//       {
-//         url: process.env.URL,
-//       },
-//     ],
-//   },
-//   apis: ["./index.js"],
-// };
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "AT YOUR SERVICE (AYS)",
+      version: "1.0.0",
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+    servers: [
+      {
+        url: process.env.URL,
+      },
+    ],
+  },
+  apis: ["./index.js"],
+};
 
-// const swaggerSpec = swaggerJsDoc(options);
+const swaggerSpec = swaggerJsDoc(options);
 
 // swagger docs
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", async function (req, res) {
   let kp = await client.get("admin")
