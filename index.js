@@ -17,6 +17,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const redis = require("redis");
 
+require("dotenv").config();
 
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
@@ -42,7 +43,6 @@ client.connect()
 // const { logs } = require("./morgan/morgan.js");
 // app.use(morgan("combined", { stream: logs }));
 
-require("dotenv").config();
 
 const cloudinary = require("./cloudinary");
 
