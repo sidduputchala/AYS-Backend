@@ -15,7 +15,7 @@ var Users = require("./models/User");
 var Employees = require("./models/Employee");
 var Messages = require("./models/Message");
 var Orders = require("./models/Order");
-
+mongoose.set('strictQuery', false);
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
