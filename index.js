@@ -15,12 +15,15 @@ var Users = require("./models/User");
 var Employees = require("./models/Employee");
 var Messages = require("./models/Message");
 var Orders = require("./models/Order");
-mongoose.set('strictQuery', false);
+mongoose.set("strictQuery", false);
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://Siddu:3645@cluster0.hc9mc.mongodb.net/AYS_DataBase?retryWrites=true&w=majority",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => {})
   .catch((err) => {});
 
@@ -35,8 +38,8 @@ const redis = require("redis");
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
 var razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: "rzp_test_5CdUHW8gMUz0Gf",
+  key_secret: "SyujWPOCUf6hKxSOtv8V27iU",
 });
 
 // const client = redis.createClient({
@@ -50,7 +53,7 @@ var razorpay = new Razorpay({
 // import { createClient } from 'redis';
 
 const client = redis.createClient({
-  password: process.env.REDIS_PASSWORD,
+  password: "pNLA1Oyvd8PLCVrH8qEiGXvl24UvUiAZ",
   socket: {
     host: "redis-18003.c321.us-east-1-2.ec2.cloud.redislabs.com",
     port: 18003,
@@ -100,7 +103,7 @@ const options = {
     ],
     servers: [
       {
-        url: process.env.URL,
+        url: "http://localhost:5000",
       },
     ],
   },
@@ -141,7 +144,7 @@ const verifyJWT = (req, res, next) => {
   if (!token) {
     res.json({ auth: false, message: "You failed to authenticate" });
   } else {
-    jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
+    jwt.verify(token, "jwtSecret", (err, decoded) => {
       if (err) {
         res.json({ auth: false, message: "You failed to authenticate1" });
       } else {
@@ -311,7 +314,7 @@ app.get("/login", async (req, res) => {
       bcrypt.compare(password, users[0].password, function (err, result) {
         if (result) {
           // create token
-          let token = jwt.sign({ email: users[0].email }, process.env.JWT_KEY, {
+          let token = jwt.sign({ email: users[0].email }, "jwtSecret", {
             expiresIn: "1h",
           });
           res.json({ auth: true, token: token, users: users });
@@ -1702,7 +1705,7 @@ app.get("/getuserbyid/:id", verifyJWT, (req, res) => {
   });
 });
 
-const port = process.env.PORT || 3001;
+const port = 3001;
 
 const server = app.listen(port, () => {
   console.log("App listening  ");
