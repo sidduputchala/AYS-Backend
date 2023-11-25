@@ -309,8 +309,7 @@ app.get("/login", async (req, res) => {
     await client.del(email);
     const users = await Users.find({ email: email });
     if (users.length > 0) {
-      const result = bcrypt.compare(password, users[0].password);
-
+    bcrypt.compare(password, users[0].password).then((result) => {;
       if (result) {
         const token = jwt.sign({ email: users[0].email }, process.env.JWT_KEY, {
           expiresIn: "1h",
@@ -319,6 +318,7 @@ app.get("/login", async (req, res) => {
       } else {
         res.json({ auth: false, token: null, users: null });
       }
+    });
     } else {
       res.json({ auth: false, token: null, users: null });
     }
