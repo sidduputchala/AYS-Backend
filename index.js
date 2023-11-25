@@ -17,13 +17,10 @@ var Messages = require("./models/Message");
 var Orders = require("./models/Order");
 mongoose.set("strictQuery", false);
 mongoose
-  .connect(
-    "mongodb+srv://Siddu:3645@cluster0.hc9mc.mongodb.net/AYS_DataBase?retryWrites=true&w=majority",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {})
   .catch((err) => {});
 
@@ -38,8 +35,8 @@ const redis = require("redis");
 const Razorpay = require("razorpay");
 const shortid = require("shortid");
 var razorpay = new Razorpay({
-  key_id: "rzp_test_5CdUHW8gMUz0Gf",
-  key_secret: "SyujWPOCUf6hKxSOtv8V27iU",
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 // const client = redis.createClient({
@@ -50,16 +47,18 @@ var razorpay = new Razorpay({
 //     }
 // });
 
-// import { createClient } from 'redis';
 
 const client = redis.createClient({
-  password: "pNLA1Oyvd8PLCVrH8qEiGXvl24UvUiAZ",
+  password: process.env.REDIS_PASSWORD,
   socket: {
     host: "redis-18003.c321.us-east-1-2.ec2.cloud.redislabs.com",
     port: 18003,
   },
 });
 
+client.on("error", (err) => {
+  console.log("Error " + err);
+});
 client.connect();
 
 // Morgan - Multer - Cloudinary
@@ -103,7 +102,7 @@ const options = {
     ],
     servers: [
       {
-        url: "http://localhost:5000",
+        url: process.env.URL,
       },
     ],
   },
@@ -144,7 +143,7 @@ const verifyJWT = (req, res, next) => {
   if (!token) {
     res.json({ auth: false, message: "You failed to authenticate" });
   } else {
-    jwt.verify(token, "jwtSecret", (err, decoded) => {
+    jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
       if (err) {
         res.json({ auth: false, message: "You failed to authenticate1" });
       } else {
@@ -304,28 +303,36 @@ const verifyJWT = (req, res, next) => {
  */
 
 app.get("/login", async (req, res) => {
-  let email = req.query.email;
-  let password = req.query.password;
-
-  await client.del(email);
-  Users.find({ email: email }, (err, users) => {
+  try {
+    const email = req.query.email;
+    const password = req.query.password;
+    await client.del(email);
+    const users = await Users.find({ email: email });
     if (users.length > 0) {
-      // compare password
-      bcrypt.compare(password, users[0].password, function (err, result) {
-        if (result) {
-          // create token
-          let token = jwt.sign({ email: users[0].email }, "jwtSecret", {
-            expiresIn: "1h",
-          });
-          res.json({ auth: true, token: token, users: users });
-        } else {
-          res.json({ auth: false, token: null, users: null });
-        }
-      });
+      const result = bcrypt.compare(password, users[0].password);
+
+      if (result) {
+        const token = jwt.sign({ email: users[0].email }, process.env.JWT_KEY, {
+          expiresIn: "1h",
+        });
+        res.json({ auth: true, token: token, users: users });
+      } else {
+        res.json({ auth: false, token: null, users: null });
+      }
     } else {
       res.json({ auth: false, token: null, users: null });
     }
-  });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res
+      .status(500)
+      .json({
+        auth: false,
+        token: null,
+        users: null,
+        error: "Internal Server Error",
+      });
+  }
 });
 
 // check email exists or not
@@ -580,30 +587,41 @@ app.post("/empsignup", (req, res) => {
  *                              $ref: '#components/schemas/Order'
  *
  */
-
 app.get("/ordersbyuser", verifyJWT, async (req, res) => {
-  let uemail = req.query.uemail;
+  const uemail = req.query.uemail;
   let isCached = false;
   let results;
+
+  console.log(uemail);
   try {
-    let cacheResults = await client.get(uemail);
+    const cacheResults = await client.get(uemail);
+
     if (cacheResults) {
       isCached = true;
       results = JSON.parse(cacheResults);
+      console.log("Orders fetched from cache");
       res.json({ auth: true, orders: results, fromCache: isCached });
     } else {
-      Orders.find({ uemail: uemail }, async (err, orders) => {
-        if (err) {
-          res.json({ auth: false, orders: null, fromCache: isCached });
-        } else {
+      try {
+        const orders = await Orders.find({ uemail: uemail });
+
+        if (orders.length > 0) {
+          console.log("Orders fetched from database");
           results = orders;
           await client.set(uemail, JSON.stringify(results));
           res.json({ auth: true, orders: orders, fromCache: isCached });
+        } else {
+          console.log("No orders found for the user");
+          res.json({ auth: true, orders: [], fromCache: isCached });
         }
-      });
+      } catch (redisError) {
+        console.error("Error in Redis operation:", redisError);
+        res.status(500).json({ auth: false, orders: null, fromCache: isCached, error: "Internal Server Error (Redis)" });
+      }
     }
   } catch (error) {
-    res.json({ auth: false, orders: null, fromCache: isCached });
+    console.error("Error in /ordersbyuser:", error);
+    res.status(500).json({ auth: false, orders: null, fromCache: isCached, error: "Internal Server Error" });
   }
 });
 
@@ -1705,7 +1723,7 @@ app.get("/getuserbyid/:id", verifyJWT, (req, res) => {
   });
 });
 
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 const server = app.listen(port, () => {
   console.log("App listening  ");
