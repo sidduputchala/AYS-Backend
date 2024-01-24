@@ -48,11 +48,13 @@ var razorpay = new Razorpay({
 // });
 
 
+    // host: "redis-18003.c321.us-east-1-2.ec2.cloud.redislabs.com",
+    // port: 18003,
 const client = redis.createClient({
   password: process.env.REDIS_PASSWORD,
   socket: {
-    host: "redis-18003.c321.us-east-1-2.ec2.cloud.redislabs.com",
-    port: 18003,
+     host:"redis-15607.c281.us-east-1-2.ec2.cloud.redislabs.com",
+    port:15607
   },
 });
 
