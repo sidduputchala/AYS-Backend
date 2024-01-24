@@ -308,8 +308,8 @@ app.get("/login", async (req, res) => {
   try {
     const email = req.query.email;
     const password = req.query.password;
-    await client.del(email);
-    const users = await Users.find({ email: email });
+    // await client.del(email);
+    // const users = await Users.find({ email: email });
     if (users.length > 0) {
     bcrypt.compare(password, users[0].password).then((result) => {;
       if (result) {
